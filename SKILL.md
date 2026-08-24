@@ -43,17 +43,20 @@ success.
 ### 2. Research Papers Before Downloading
 
 For each lowest-level collection, create one or more reviewed manifest rows as justified by the
-user request; multiple qualifying papers may share a leaf. First build a compact research
+user request; multiple qualifying papers may share a leaf, and one reviewed paper may be reused
+as a comparison baseline in multiple related leaves. First build a compact research
 matrix with the collection, candidate paper, year, venue, landmark contribution, CCF affiliation if
 verified, canonical landing page, and openly obtainable PDF source.
 
 When the user requests classic or seminal work, prefer the original paper that introduced the
-method or established the benchmark. Honor the explicit venue allowlist and do not silently substitute a nearby venue. For a multi-venue request, build a source-distribution matrix before downloading: every required venue must appear, and no single venue may dominate. For the non-CVPR venue set (`ICML`, `NeurIPS`, `ICLR`, `AAAI`, `ICCV`, `MICCAI`, `TPAMI`, `TMI`, `Lancet`, `Nature`, `Science`, `Nature Communications`, `Science Robotics`, `MIA`), use these checks unless the user specifies a different policy:
+method or established the benchmark. Honor the explicit venue allowlist and do not silently substitute a nearby venue. For a multi-venue request, build a source-distribution matrix before downloading: every required venue must appear, and no single venue may dominate. For the non-CVPR venue set (`ICML`, `NeurIPS`, `ICLR`, `AAAI`, `ICCV`, `MICCAI`, `TPAMI`, `TMI`, `TIP`, `Lancet`, `Nature`, `Science`, `Nature Communications`, `Science Robotics`, `MIA`), use these checks unless the user specifies a different policy:
 
 ```text
---allowed-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA"
---required-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA"
+--allowed-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,TIP,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA"
+--required-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,TIP,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA"
 --min-per-venue 1 --max-venue-share 0.25
+The allowlist also includes `TIP` (IEEE Transactions on Image Processing); include it in both
+venue flags whenever it is part of the user's requested source set.
 ```
 
 For a small manifest where the share cap is too strict, use an explicit integer `--max-per-venue`
@@ -93,8 +96,8 @@ Validate the candidate matrix before creating Zotero items:
 
 ```bash
 python "$CURATOR" validate --manifest work/manifest.tsv --check-targets --require-all-leaves \
-  --allowed-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
-  --required-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
+  --allowed-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,TIP,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
+  --required-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,TIP,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
   --min-per-venue 1 --max-venue-share 0.25 \
   --require-topic-evidence --min-topic-term-matches 1
 python "$CURATOR" download \
@@ -134,8 +137,8 @@ python "$CURATOR" import \
   --pdf-root work/Zotero_PDFs \
   --state work/import-state.json \
   --dry-run --require-all-leaves \
-  --allowed-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
-  --required-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
+  --allowed-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,TIP,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
+  --required-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,TIP,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
   --min-per-venue 1 --max-venue-share 0.25 \
   --require-topic-evidence --min-topic-term-matches 1
 
@@ -144,8 +147,8 @@ python "$CURATOR" import \
   --pdf-root work/Zotero_PDFs \
   --state work/import-state.json \
   --require-all-leaves \
-  --allowed-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
-  --required-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
+  --allowed-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,TIP,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
+  --required-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,TIP,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
   --min-per-venue 1 --max-venue-share 0.25 \
   --require-topic-evidence --min-topic-term-matches 1
 ```

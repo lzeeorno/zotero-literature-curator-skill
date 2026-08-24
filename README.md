@@ -106,7 +106,7 @@ field contract is in [references/manifest.md](references/manifest.md).
 For multi-venue work, pass `--allowed-venues`, `--required-venues`, `--min-per-venue`,
 `--max-per-venue`, and/or `--max-venue-share` to `validate` and `import`. These checks prevent a
 manifest from silently becoming a single-source batch. For example, a non-CVPR batch can require
-all of `ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,
+all of `ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,TIP,Lancet,Nature,Science,Nature Communications,
 Science Robotics,MIA` and cap any one venue at 25%.
 
 For exact leaf relevance, use `--require-topic-evidence`. It requires a nonempty `abstract`,
@@ -122,8 +122,8 @@ Then validate, download, inspect, and import:
 
 ```bash
 python "$CURATOR" validate --manifest work/manifest.tsv --check-targets --require-all-leaves \
-  --allowed-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
-  --required-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
+  --allowed-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,TIP,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
+  --required-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,TIP,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
   --min-per-venue 1 --max-venue-share 0.25 \
   --require-topic-evidence --min-topic-term-matches 1
 
@@ -189,7 +189,8 @@ endpoint is required.
 
 Use `--require-all-leaves` with `validate --check-targets` and `import` for the full-library
 workflow. It requires at least one row per current lowest-level category and permits multiple rows
-in a leaf. Add `--min-year YEAR --max-year YEAR` to enforce an inclusive publication-year window.
+in a leaf or reuse of a reviewed baseline across related leaves. Add `--min-year YEAR --max-year YEAR`
+to enforce an inclusive publication-year window.
 Omit the leaf-coverage check only for an explicitly selected subset.
 
 ## Connector Unavailable

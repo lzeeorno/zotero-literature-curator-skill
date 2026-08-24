@@ -327,7 +327,6 @@ def read_manifest(path: Path) -> list[dict[str, str]]:
 
 def validate_manifest_rows(rows: list[dict[str, str]]) -> list[str]:
     errors: list[str] = []
-    seen_tags: set[str] = set()
     for row in rows:
         line = row.get("_line", "?")
         for column in REQUIRED_COLUMNS:
@@ -341,10 +340,6 @@ def validate_manifest_rows(rows: list[dict[str, str]]) -> list[str]:
             errors.append(f"line {line}: year must be four digits, got {year!r}")
         try:
             resolve_pdf_url(row.get("pdf_spec", ""), row.get("source_url", ""))
-            tag = build_tag(row)
-            if tag in seen_tags:
-                errors.append(f"line {line}: duplicate tag {tag}")
-            seen_tags.add(tag)
         except ManifestError as exc:
             errors.append(f"line {line}: {exc}")
     return errors
