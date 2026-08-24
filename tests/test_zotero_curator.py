@@ -155,6 +155,29 @@ class ZoteroCuratorTests(unittest.TestCase):
             "2017-PNAS-EWC",
         )
 
+    def test_venue_distribution_rejects_single_source_manifest(self) -> None:
+        args = type("Args", (), {
+            "allowed_venues": "ICML,NeurIPS,ICLR",
+            "required_venues": "ICML,NeurIPS,ICLR",
+            "min_per_venue": 1,
+            "max_per_venue": 2,
+            "max_venue_share": 0.67,
+        })()
+        rows = [{"venue": "ICML"}, {"venue": "ICML"}, {"venue": "CVPR"}]
+        with self.assertRaises(curator.ManifestError):
+            curator.validate_venue_distribution(rows, args)
+
+    def test_venue_distribution_accepts_balanced_manifest(self) -> None:
+        args = type("Args", (), {
+            "allowed_venues": "ICML,NeurIPS,ICLR",
+            "required_venues": "ICML,NeurIPS,ICLR",
+            "min_per_venue": 1,
+            "max_per_venue": 2,
+            "max_venue_share": 0.5,
+        })()
+        rows = [{"venue": "ICML"}, {"venue": "NeurIPS"}, {"venue": "ICLR"}, {"venue": "ICML"}]
+        curator.validate_venue_distribution(rows, args)
+
     def test_download_validate_and_import_sequence(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

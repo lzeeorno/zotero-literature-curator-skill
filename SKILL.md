@@ -47,10 +47,19 @@ matrix with the collection, candidate paper, year, venue, landmark contribution,
 verified, canonical landing page, and openly obtainable PDF source.
 
 When the user requests classic or seminal work, prefer the original paper that introduced the
-method or established the benchmark. Honor explicit venue requirements such as CCF A, `Nature`,
-`Science`, `Lancet`, TPAMI, MIA, CVPR, ICCV, ICML, NeurIPS, ICLR, or AAAI. A venue that is
-authoritative but not explicitly classified by CCF remains valid, but must not receive a made-up
-CCF suffix.
+method or established the benchmark. Honor the explicit venue allowlist and do not silently substitute a nearby venue. For a multi-venue request, build a source-distribution matrix before downloading: every required venue must appear, and no single venue may dominate. For the non-CVPR venue set (`ICML`, `NeurIPS`, `ICLR`, `AAAI`, `ICCV`, `MICCAI`, `TPAMI`, `TMI`, `Lancet`, `Nature`, `Science`, `Nature Communications`, `Science Robotics`, `MIA`), use these checks unless the user specifies a different policy:
+
+```text
+--allowed-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA"
+--required-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA"
+--min-per-venue 1 --max-venue-share 0.25
+```
+
+For a small manifest where the share cap is too strict, use an explicit integer `--max-per-venue`
+and record the reason in the research matrix. Medical leaves should weight `MICCAI`, `TMI`, `MIA`,
+and the clinical journals more heavily, while preserving the required multi-venue coverage. A
+venue that is authoritative but not explicitly classified by CCF remains valid, but must not
+receive a made-up CCF suffix.
 
 Use primary proceedings, publisher, author, arXiv, or PMC pages to verify metadata. Prefer open
 PDF sources in this order: arXiv/PMC, official proceedings or publisher open access, then an author
@@ -73,7 +82,10 @@ collection_id, collection_name, title, year, venue, short_tag, ccf, pdf_spec, so
 Validate the candidate matrix before creating Zotero items:
 
 ```bash
-python "$CURATOR" validate --manifest work/manifest.tsv --check-targets --require-all-leaves
+python "$CURATOR" validate --manifest work/manifest.tsv --check-targets --require-all-leaves \
+  --allowed-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
+  --required-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
+  --min-per-venue 1 --max-venue-share 0.25
 python "$CURATOR" download \
   --manifest work/manifest.tsv \
   --pdf-root work/Zotero_PDFs
@@ -110,14 +122,19 @@ python "$CURATOR" import \
   --manifest work/manifest.tsv \
   --pdf-root work/Zotero_PDFs \
   --state work/import-state.json \
-  --dry-run \
-  --require-all-leaves
+  --dry-run --require-all-leaves \
+  --allowed-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
+  --required-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
+  --min-per-venue 1 --max-venue-share 0.25
 
 python "$CURATOR" import \
   --manifest work/manifest.tsv \
   --pdf-root work/Zotero_PDFs \
   --state work/import-state.json \
-  --require-all-leaves
+  --require-all-leaves \
+  --allowed-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
+  --required-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
+  --min-per-venue 1 --max-venue-share 0.25
 ```
 
 For every manifest row, the importer creates a Zotero parent item, moves it to the supplied

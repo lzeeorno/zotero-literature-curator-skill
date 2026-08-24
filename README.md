@@ -7,7 +7,8 @@ An agent skill for turning a real local Zotero collection tree into a curated li
 3. guides an agent to research authoritative or landmark papers that match each category;
 4. downloads a local PDF into a matching folder;
 5. imports the item and managed PDF attachment into Zotero; and
-6. assigns a tag such as `2016-CVPR-ResNet-CCFA` or `2017-PNAS-EWC`.
+6. assigns a tag such as `2016-CVPR-ResNet-CCFA` or `2017-PNAS-EWC`;
+7. validates that a multi-venue manifest follows an explicit allowlist and distribution policy.
 
 The skill is designed for requests in Chinese or English, including requests such as “给每个 Zotero
 最底层分类添加一篇经典论文并下载 PDF” and “populate each leaf collection with a seminal CCF-A
@@ -97,10 +98,19 @@ field contract is in [references/manifest.md](references/manifest.md).
 | `pdf_spec` | `arxiv:1512.03385` | Open PDF source |
 | `source_url` | `https://arxiv.org/abs/1512.03385` | Canonical paper page |
 
+For multi-venue work, pass `--allowed-venues`, `--required-venues`, `--min-per-venue`,
+`--max-per-venue`, and/or `--max-venue-share` to `validate` and `import`. These checks prevent a
+manifest from silently becoming a single-source batch. For example, a non-CVPR batch can require
+all of `ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,
+Science Robotics,MIA` and cap any one venue at 25%.
+
 Then validate, download, inspect, and import:
 
 ```bash
-python "$CURATOR" validate --manifest work/manifest.tsv --check-targets --require-all-leaves
+python "$CURATOR" validate --manifest work/manifest.tsv --check-targets --require-all-leaves \
+  --allowed-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
+  --required-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
+  --min-per-venue 1 --max-venue-share 0.25
 
 python "$CURATOR" download \
   --manifest work/manifest.tsv \

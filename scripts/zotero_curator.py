@@ -19,6 +19,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -353,6 +354,63 @@ def validate_manifest_rows(rows: list[dict[str, str]]) -> list[str]:
     return errors
 
 
+def parse_venue_list(value: str | None, option: str) -> set[str]:
+    if not value:
+        return set()
+    venues = {part.strip() for part in value.split(",") if part.strip()}
+    if not venues:
+        raise ManifestError(f"{option} must contain at least one venue")
+    return venues
+
+
+def validate_venue_distribution(rows: list[dict[str, str]], args: argparse.Namespace) -> None:
+    """Enforce an explicit, user-reviewed source policy for a manifest."""
+    allowed = parse_venue_list(getattr(args, "allowed_venues", None), "--allowed-venues")
+    required = parse_venue_list(getattr(args, "required_venues", None), "--required-venues")
+    if required and allowed and not required <= allowed:
+        unknown = ", ".join(sorted(required - allowed))
+        raise ManifestError(f"--required-venues contains venues outside --allowed-venues: {unknown}")
+    counts = Counter(row["venue"].strip() for row in rows)
+    errors: list[str] = []
+    if allowed:
+        disallowed = sorted(venue for venue in counts if venue not in allowed)
+        if disallowed:
+            errors.append("venues not allowed by policy: " + ", ".join(disallowed))
+    if required:
+        missing = sorted(required - counts.keys())
+        if missing:
+            errors.append("required venues absent from manifest: " + ", ".join(missing))
+    min_per_venue = getattr(args, "min_per_venue", None)
+    if min_per_venue is not None:
+        if min_per_venue < 1:
+            errors.append("--min-per-venue must be at least 1")
+        else:
+            scope = required or allowed
+            below = sorted(f"{venue}={counts.get(venue, 0)}" for venue in scope if counts.get(venue, 0) < min_per_venue)
+            if below:
+                errors.append(f"venues below --min-per-venue={min_per_venue}: " + ", ".join(below))
+    max_per_venue = getattr(args, "max_per_venue", None)
+    if max_per_venue is not None:
+        if max_per_venue < 1:
+            errors.append("--max-per-venue must be at least 1")
+        else:
+            above = sorted(f"{venue}={count}" for venue, count in counts.items() if count > max_per_venue)
+            if above:
+                errors.append(f"venues above --max-per-venue={max_per_venue}: " + ", ".join(above))
+    max_share = getattr(args, "max_venue_share", None)
+    if max_share is not None:
+        if not 0 < max_share <= 1:
+            errors.append("--max-venue-share must be greater than 0 and at most 1")
+        else:
+            above = sorted(
+                f"{venue}={count}/{len(rows)}" for venue, count in counts.items() if count / len(rows) > max_share
+            )
+            if above:
+                errors.append(f"venues above --max-venue-share={max_share:g}: " + ", ".join(above))
+    if errors:
+        raise ManifestError("venue distribution validation failed: " + "; ".join(errors))
+
+
 def write_tsv(path: Path, rows: list[dict[str, Any]], columns: list[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
@@ -527,7 +585,10 @@ def cmd_inventory(args: argparse.Namespace) -> int:
 def cmd_validate(args: argparse.Namespace) -> int:
     manifest = Path(args.manifest)
     rows = read_manifest(manifest)
+    validate_venue_distribution(rows, args)
     print(f"manifest=valid rows={len(rows)}")
+    counts = Counter(row["venue"].strip() for row in rows)
+    print("venue_distribution=" + ", ".join(f"{venue}:{counts[venue]}" for venue in sorted(counts)))
     if args.require_all_leaves and not args.check_targets:
         raise ManifestError("--require-all-leaves requires --check-targets")
     if args.check_targets:
@@ -562,6 +623,7 @@ def cmd_download(args: argparse.Namespace) -> int:
 def cmd_import(args: argparse.Namespace) -> int:
     manifest_path = Path(args.manifest)
     rows = read_manifest(manifest_path)
+    validate_venue_distribution(rows, args)
     root = Path(args.pdf_root)
     connector = ZoteroConnector(args.endpoint)
     selected = connector.selected_collection()
@@ -659,6 +721,11 @@ def parser() -> argparse.ArgumentParser:
 
     validate = commands.add_parser("validate", help="validate a reviewed paper manifest")
     validate.add_argument("--manifest", required=True)
+    validate.add_argument("--allowed-venues", help="comma-separated venue allowlist")
+    validate.add_argument("--required-venues", help="comma-separated venues that must each appear")
+    validate.add_argument("--min-per-venue", type=int, help="minimum rows for each required venue, or allowed venue when required is omitted")
+    validate.add_argument("--max-per-venue", type=int, help="maximum rows from any one venue")
+    validate.add_argument("--max-venue-share", type=float, help="maximum fraction of manifest rows from any one venue")
     validate.add_argument("--check-targets", action="store_true", help="also check IDs against local Zotero")
     validate.add_argument(
         "--require-all-leaves",
@@ -673,6 +740,11 @@ def parser() -> argparse.ArgumentParser:
 
     importer = commands.add_parser("import", help="create Zotero items, tags, and managed local PDF attachments")
     importer.add_argument("--manifest", required=True)
+    importer.add_argument("--allowed-venues", help="comma-separated venue allowlist")
+    importer.add_argument("--required-venues", help="comma-separated venues that must each appear")
+    importer.add_argument("--min-per-venue", type=int, help="minimum rows for each required venue, or allowed venue when required is omitted")
+    importer.add_argument("--max-per-venue", type=int, help="maximum rows from any one venue")
+    importer.add_argument("--max-venue-share", type=float, help="maximum fraction of manifest rows from any one venue")
     importer.add_argument("--pdf-root", required=True)
     importer.add_argument("--state", help="local resumable import-state JSON path")
     importer.add_argument("--dry-run", action="store_true", help="check all local inputs without modifying Zotero")
