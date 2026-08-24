@@ -1,0 +1,23 @@
+{
+  "skill_name": "zotero-literature-curator",
+  "evals": [
+    {
+      "id": "nested-medical-library",
+      "prompt": "我的本地 Zotero 有脑肿瘤分割、肺结节、病理 WSI 三个最低层分类。每个分类添加一篇著名论文，必须下载 PDF，并按年份-会议-方法名打标签。",
+      "expected_output": "The agent checks the live Connector tree, prepares one reviewed manifest row per leaf, downloads real PDFs locally, imports through Connector, and reports tags and any failures.",
+      "files": []
+    },
+    {
+      "id": "connector-offline-fallback",
+      "prompt": "Zotero 没开，但请先为每个最低层分类整理经典论文 PDF，之后我会手动拖入 Zotero。",
+      "expected_output": "The agent does not write the Zotero database, preserves an auditable category-resolved PDF tree and manifest, and clearly reports that import remains manual.",
+      "files": []
+    },
+    {
+      "id": "tag-without-ccf",
+      "prompt": "给持续学习分类添加 EWC，PNAS 不在本次 CCF 归属范围内，不要强加 CCF 标签。",
+      "expected_output": "The manifest uses a verified direct PDF source and produces the three-part tag 2017-PNAS-EWC without an invented CCF suffix.",
+      "files": []
+    }
+  ]
+}

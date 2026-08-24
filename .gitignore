@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+work/
+Zotero_PDFs/
+*.pdf
+*.sqlite
+*.sqlite-*
+*.zotero-state.json
+import-state.json
