@@ -327,7 +327,6 @@ def read_manifest(path: Path) -> list[dict[str, str]]:
 
 def validate_manifest_rows(rows: list[dict[str, str]]) -> list[str]:
     errors: list[str] = []
-    seen_collections: set[str] = set()
     seen_tags: set[str] = set()
     for row in rows:
         line = row.get("_line", "?")
@@ -337,9 +336,6 @@ def validate_manifest_rows(rows: list[dict[str, str]]) -> list[str]:
         collection_id = row.get("collection_id", "")
         if collection_id and not re.fullmatch(r"C\d+", collection_id):
             errors.append(f"line {line}: collection_id must look like C123, got {collection_id!r}")
-        if collection_id in seen_collections:
-            errors.append(f"line {line}: duplicate collection_id {collection_id}")
-        seen_collections.add(collection_id)
         year = row.get("year", "")
         if year and not re.fullmatch(r"\d{4}", year):
             errors.append(f"line {line}: year must be four digits, got {year!r}")
@@ -409,6 +405,24 @@ def validate_venue_distribution(rows: list[dict[str, str]], args: argparse.Names
                 errors.append(f"venues above --max-venue-share={max_share:g}: " + ", ".join(above))
     if errors:
         raise ManifestError("venue distribution validation failed: " + "; ".join(errors))
+
+
+def validate_year_range(rows: list[dict[str, str]], args: argparse.Namespace) -> None:
+    minimum = getattr(args, "min_year", None)
+    maximum = getattr(args, "max_year", None)
+    if minimum is None and maximum is None:
+        return
+    if minimum is not None and maximum is not None and minimum > maximum:
+        raise ManifestError("--min-year cannot be greater than --max-year")
+    errors = []
+    for row in rows:
+        year = int(row["year"])
+        if minimum is not None and year < minimum:
+            errors.append(f"line {row.get('_line', '?')}: year {year} is below --min-year={minimum}")
+        if maximum is not None and year > maximum:
+            errors.append(f"line {row.get('_line', '?')}: year {year} is above --max-year={maximum}")
+    if errors:
+        raise ManifestError("year range validation failed:\n- " + "\n- ".join(errors))
 
 
 def topic_match_count(row: dict[str, str]) -> int:
@@ -636,6 +650,7 @@ def cmd_inventory(args: argparse.Namespace) -> int:
 def cmd_validate(args: argparse.Namespace) -> int:
     manifest = Path(args.manifest)
     rows = read_manifest(manifest)
+    validate_year_range(rows, args)
     validate_venue_distribution(rows, args)
     validate_topic_relevance(rows, args)
     print(f"manifest=valid rows={len(rows)}")
@@ -675,6 +690,7 @@ def cmd_download(args: argparse.Namespace) -> int:
 def cmd_import(args: argparse.Namespace) -> int:
     manifest_path = Path(args.manifest)
     rows = read_manifest(manifest_path)
+    validate_year_range(rows, args)
     validate_venue_distribution(rows, args)
     validate_topic_relevance(rows, args)
     root = Path(args.pdf_root)
@@ -697,11 +713,12 @@ def cmd_import(args: argparse.Namespace) -> int:
     failed = 0
     for row in rows:
         collection_id = row["collection_id"]
+        state_key = f"{collection_id}:{build_tag(row)}"
         attachment = pdf_path(row, root)
-        record = state.get(collection_id)
+        record = state.get(state_key)
         if record is None:
             record = initial_state(row, attachment)
-            state[collection_id] = record
+            state[state_key] = record
             save_state(state_path, state)
             try:
                 create_item(connector, row, record["session_id"], record["connector_id"])
@@ -779,13 +796,15 @@ def parser() -> argparse.ArgumentParser:
     validate.add_argument("--min-per-venue", type=int, help="minimum rows for each required venue, or allowed venue when required is omitted")
     validate.add_argument("--max-per-venue", type=int, help="maximum rows from any one venue")
     validate.add_argument("--max-venue-share", type=float, help="maximum fraction of manifest rows from any one venue")
+    validate.add_argument("--min-year", type=int, help="minimum inclusive publication year")
+    validate.add_argument("--max-year", type=int, help="maximum inclusive publication year")
     validate.add_argument("--require-topic-evidence", action="store_true", help="require abstract-supported topic_terms, rationale, and an exact abstract evidence excerpt for every row")
     validate.add_argument("--min-topic-term-matches", type=int, default=1, help="minimum topic_terms that must occur in the abstract")
     validate.add_argument("--check-targets", action="store_true", help="also check IDs against local Zotero")
     validate.add_argument(
         "--require-all-leaves",
         action="store_true",
-        help="require exactly one row for every current lowest-level Zotero collection",
+        help="require at least one row for every current lowest-level Zotero collection",
     )
 
     download = commands.add_parser("download", help="download and validate local PDF copies from the manifest")
@@ -800,6 +819,8 @@ def parser() -> argparse.ArgumentParser:
     importer.add_argument("--min-per-venue", type=int, help="minimum rows for each required venue, or allowed venue when required is omitted")
     importer.add_argument("--max-per-venue", type=int, help="maximum rows from any one venue")
     importer.add_argument("--max-venue-share", type=float, help="maximum fraction of manifest rows from any one venue")
+    importer.add_argument("--min-year", type=int, help="minimum inclusive publication year")
+    importer.add_argument("--max-year", type=int, help="maximum inclusive publication year")
     importer.add_argument("--require-topic-evidence", action="store_true", help="require abstract-supported topic_terms, rationale, and an exact abstract evidence excerpt for every row")
     importer.add_argument("--min-topic-term-matches", type=int, default=1, help="minimum topic_terms that must occur in the abstract")
     importer.add_argument("--pdf-root", required=True)
@@ -808,7 +829,7 @@ def parser() -> argparse.ArgumentParser:
     importer.add_argument(
         "--require-all-leaves",
         action="store_true",
-        help="require exactly one row for every current lowest-level Zotero collection",
+        help="require at least one row for every current lowest-level Zotero collection",
     )
     return root
 

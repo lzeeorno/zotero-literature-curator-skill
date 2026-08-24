@@ -188,9 +188,9 @@ Use `--endpoint http://127.0.0.1:23119` before the subcommand when a nondefault 
 endpoint is required.
 
 Use `--require-all-leaves` with `validate --check-targets` and `import` for the full-library
-workflow. It rejects a parent category, a stale collection ID, or a manifest that leaves any current
-lowest-level Zotero category uncovered. Omit it only when the user explicitly requests a selected
-subset of leaf collections.
+workflow. It requires at least one row per current lowest-level category and permits multiple rows
+in a leaf. Add `--min-year YEAR --max-year YEAR` to enforce an inclusive publication-year window.
+Omit the leaf-coverage check only for an explicitly selected subset.
 
 ## Connector Unavailable
 

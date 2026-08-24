@@ -42,7 +42,8 @@ success.
 
 ### 2. Research Papers Before Downloading
 
-For each lowest-level collection, create one reviewed manifest row. First build a compact research
+For each lowest-level collection, create one or more reviewed manifest rows as justified by the
+user request; multiple qualifying papers may share a leaf. First build a compact research
 matrix with the collection, candidate paper, year, venue, landmark contribution, CCF affiliation if
 verified, canonical landing page, and openly obtainable PDF source.
 

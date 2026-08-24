@@ -264,9 +264,10 @@ class ZoteroCuratorTests(unittest.TestCase):
             self.assertEqual(update["tags"], ["2024-CVPR-MockMethod-CCFA"])
             self.assertEqual(attachment_metadata["parentItemID"], saved_item["items"][0]["id"])
             state_data = json.loads(state.read_text(encoding="utf-8"))
-            self.assertEqual(set(state_data), {"C2"})
-            self.assertEqual(state_data["C2"]["status"], "imported")
-            self.assertEqual(state_data["C2"]["tag"], "2024-CVPR-MockMethod-CCFA")
+            state_key = "C2:2024-CVPR-MockMethod-CCFA"
+            self.assertEqual(set(state_data), {state_key})
+            self.assertEqual(state_data[state_key]["status"], "imported")
+            self.assertEqual(state_data[state_key]["tag"], "2024-CVPR-MockMethod-CCFA")
             before_retry = len(self.server.events)
             retry = self.run_cli("import", "--manifest", str(manifest), "--pdf-root", str(pdf_root), "--state", str(state))
             self.assertIn("already recorded as imported", retry.stdout)
@@ -301,7 +302,7 @@ class ZoteroCuratorTests(unittest.TestCase):
                 "import", "--manifest", str(manifest), "--pdf-root", str(pdf_root), "--state", str(state), expected=1
             )
             self.assertIn("saveAttachment returned HTTP 200", result.stderr)
-            self.assertEqual(json.loads(state.read_text(encoding="utf-8"))["C2"]["status"], "attachment_failed")
+            self.assertEqual(json.loads(state.read_text(encoding="utf-8"))["C2:2024-CVPR-MockMethod-CCFA"]["status"], "attachment_failed")
             before_retry = len(self.server.events)
             self.server.attachment_status = 201
             self.run_cli("import", "--manifest", str(manifest), "--pdf-root", str(pdf_root), "--state", str(state))
@@ -309,7 +310,7 @@ class ZoteroCuratorTests(unittest.TestCase):
                 [event[1] for event in self.server.events[before_retry:]],
                 ["/connector/getSelectedCollection", "/connector/saveAttachment"],
             )
-            self.assertEqual(json.loads(state.read_text(encoding="utf-8"))["C2"]["status"], "imported")
+            self.assertEqual(json.loads(state.read_text(encoding="utf-8"))["C2:2024-CVPR-MockMethod-CCFA"]["status"], "imported")
 
     def test_import_encodes_unicode_attachment_metadata_as_ascii_json(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
