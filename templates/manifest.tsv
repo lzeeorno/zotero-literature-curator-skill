@@ -1,2 +1,2 @@
-collection_id	collection_name	title	year	venue	short_tag	ccf	pdf_spec	source_url	authors	doi	abstract	item_type	language
-C123	Example leaf collection	Example landmark paper	2024	CVPR	ExampleMethod	CCFA	arxiv:2401.01234	https://arxiv.org/abs/2401.01234	Family, Given			journalArticle	en
+collection_id	collection_name	title	year	venue	short_tag	ccf	pdf_spec	source_url	authors	doi	abstract	item_type	language	topic_terms	topic_rationale
+C123	Example leaf collection	Example landmark paper	2024	CVPR	ExampleMethod	CCFA	arxiv:2401.01234	https://arxiv.org/abs/2401.01234	Family, Given		This abstract explicitly studies semantic segmentation.	journalArticle	en	semantic segmentation,segmentation	The paper's title or abstract directly supports this leaf's semantic-segmentation topic.

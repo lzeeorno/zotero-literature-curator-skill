@@ -77,6 +77,11 @@ collection_id, collection_name, title, year, venue, short_tag, ccf, pdf_spec, so
 `url:<direct-open-pdf-url>`. A legacy `search:<title>` value is accepted only when the reviewed
 `source_url` is an arXiv landing page, from which the exact PDF can be derived.
 
+For every new row, also fill `topic_terms` with the English concepts expected for that exact leaf,
+and `topic_rationale` with a concise explanation of the fit. The terms must be found in the
+paper's title or abstract. Do not use the parent category alone as evidence: a general 4D-avatar
+paper does not belong under a medical digital-twin leaf merely because both discuss 3D/4D models.
+
 ### 3. Validate And Download Local PDFs
 
 Validate the candidate matrix before creating Zotero items:
@@ -85,7 +90,8 @@ Validate the candidate matrix before creating Zotero items:
 python "$CURATOR" validate --manifest work/manifest.tsv --check-targets --require-all-leaves \
   --allowed-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
   --required-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
-  --min-per-venue 1 --max-venue-share 0.25
+  --min-per-venue 1 --max-venue-share 0.25 \
+  --require-topic-evidence --min-topic-term-matches 1
 python "$CURATOR" download \
   --manifest work/manifest.tsv \
   --pdf-root work/Zotero_PDFs
@@ -125,7 +131,8 @@ python "$CURATOR" import \
   --dry-run --require-all-leaves \
   --allowed-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
   --required-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
-  --min-per-venue 1 --max-venue-share 0.25
+  --min-per-venue 1 --max-venue-share 0.25 \
+  --require-topic-evidence --min-topic-term-matches 1
 
 python "$CURATOR" import \
   --manifest work/manifest.tsv \
@@ -134,7 +141,8 @@ python "$CURATOR" import \
   --require-all-leaves \
   --allowed-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
   --required-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
-  --min-per-venue 1 --max-venue-share 0.25
+  --min-per-venue 1 --max-venue-share 0.25 \
+  --require-topic-evidence --min-topic-term-matches 1
 ```
 
 For every manifest row, the importer creates a Zotero parent item, moves it to the supplied

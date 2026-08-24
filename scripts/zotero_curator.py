@@ -411,6 +411,41 @@ def validate_venue_distribution(rows: list[dict[str, str]], args: argparse.Names
         raise ManifestError("venue distribution validation failed: " + "; ".join(errors))
 
 
+def topic_match_count(row: dict[str, str]) -> int:
+    """Count reviewed topic terms supported by the paper title or abstract."""
+    evidence = " ".join((row.get("title", ""), row.get("abstract", ""))).casefold()
+    terms = [term.strip().casefold() for term in row.get("topic_terms", "").split(",") if term.strip()]
+    return sum(term in evidence for term in terms)
+
+
+def validate_topic_relevance(rows: list[dict[str, str]], args: argparse.Namespace) -> None:
+    """Require explicit, text-supported evidence that each paper fits its leaf topic."""
+    if not getattr(args, "require_topic_evidence", False):
+        return
+    minimum = getattr(args, "min_topic_term_matches", 1)
+    if minimum < 1:
+        raise ManifestError("--min-topic-term-matches must be at least 1")
+    errors: list[str] = []
+    for row in rows:
+        line = row.get("_line", "?")
+        terms = [term.strip() for term in row.get("topic_terms", "").split(",") if term.strip()]
+        rationale = row.get("topic_rationale", "").strip()
+        if not terms:
+            errors.append(f"line {line}: topic_terms is required with --require-topic-evidence")
+            continue
+        if not rationale:
+            errors.append(f"line {line}: topic_rationale is required with --require-topic-evidence")
+            continue
+        matches = topic_match_count(row)
+        if matches < minimum:
+            errors.append(
+                f"line {line}: only {matches} topic term(s) from topic_terms occur in title/abstract; "
+                f"need at least {minimum} for {row.get('collection_name', row.get('collection_id', 'collection'))}"
+            )
+    if errors:
+        raise ManifestError("topic relevance validation failed:\n- " + "\n- ".join(errors))
+
+
 def write_tsv(path: Path, rows: list[dict[str, Any]], columns: list[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
@@ -586,6 +621,7 @@ def cmd_validate(args: argparse.Namespace) -> int:
     manifest = Path(args.manifest)
     rows = read_manifest(manifest)
     validate_venue_distribution(rows, args)
+    validate_topic_relevance(rows, args)
     print(f"manifest=valid rows={len(rows)}")
     counts = Counter(row["venue"].strip() for row in rows)
     print("venue_distribution=" + ", ".join(f"{venue}:{counts[venue]}" for venue in sorted(counts)))
@@ -624,6 +660,7 @@ def cmd_import(args: argparse.Namespace) -> int:
     manifest_path = Path(args.manifest)
     rows = read_manifest(manifest_path)
     validate_venue_distribution(rows, args)
+    validate_topic_relevance(rows, args)
     root = Path(args.pdf_root)
     connector = ZoteroConnector(args.endpoint)
     selected = connector.selected_collection()
@@ -726,6 +763,8 @@ def parser() -> argparse.ArgumentParser:
     validate.add_argument("--min-per-venue", type=int, help="minimum rows for each required venue, or allowed venue when required is omitted")
     validate.add_argument("--max-per-venue", type=int, help="maximum rows from any one venue")
     validate.add_argument("--max-venue-share", type=float, help="maximum fraction of manifest rows from any one venue")
+    validate.add_argument("--require-topic-evidence", action="store_true", help="require text-supported topic_terms and topic_rationale for every row")
+    validate.add_argument("--min-topic-term-matches", type=int, default=1, help="minimum topic_terms that must occur in title or abstract")
     validate.add_argument("--check-targets", action="store_true", help="also check IDs against local Zotero")
     validate.add_argument(
         "--require-all-leaves",
@@ -745,6 +784,8 @@ def parser() -> argparse.ArgumentParser:
     importer.add_argument("--min-per-venue", type=int, help="minimum rows for each required venue, or allowed venue when required is omitted")
     importer.add_argument("--max-per-venue", type=int, help="maximum rows from any one venue")
     importer.add_argument("--max-venue-share", type=float, help="maximum fraction of manifest rows from any one venue")
+    importer.add_argument("--require-topic-evidence", action="store_true", help="require text-supported topic_terms and topic_rationale for every row")
+    importer.add_argument("--min-topic-term-matches", type=int, default=1, help="minimum topic_terms that must occur in title or abstract")
     importer.add_argument("--pdf-root", required=True)
     importer.add_argument("--state", help="local resumable import-state JSON path")
     importer.add_argument("--dry-run", action="store_true", help="check all local inputs without modifying Zotero")

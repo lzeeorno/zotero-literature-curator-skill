@@ -178,6 +178,28 @@ class ZoteroCuratorTests(unittest.TestCase):
         rows = [{"venue": "ICML"}, {"venue": "NeurIPS"}, {"venue": "ICLR"}, {"venue": "ICML"}]
         curator.validate_venue_distribution(rows, args)
 
+    def test_topic_relevance_rejects_unrelated_title(self) -> None:
+        args = type("Args", (), {"require_topic_evidence": True, "min_topic_term_matches": 1})()
+        rows = [{
+            "_line": "2", "collection_name": "Medical Digital Twin",
+            "title": "CAP4D: Creating Animatable 4D Portrait Avatars",
+            "abstract": "", "topic_terms": "digital twin,patient simulation",
+            "topic_rationale": "The paper must concern a medical digital twin.",
+        }]
+        with self.assertRaises(curator.ManifestError) as error:
+            curator.validate_topic_relevance(rows, args)
+        self.assertIn("Medical Digital Twin", str(error.exception))
+
+    def test_topic_relevance_accepts_supported_medical_topic(self) -> None:
+        args = type("Args", (), {"require_topic_evidence": True, "min_topic_term_matches": 1})()
+        rows = [{
+            "_line": "2", "collection_name": "Medical Digital Twin",
+            "title": "Patient-specific digital twin simulation for treatment response",
+            "abstract": "", "topic_terms": "digital twin,treatment response",
+            "topic_rationale": "Studies patient-specific digital-twin simulation.",
+        }]
+        curator.validate_topic_relevance(rows, args)
+
     def test_download_validate_and_import_sequence(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

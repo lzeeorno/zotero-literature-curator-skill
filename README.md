@@ -9,6 +9,7 @@ An agent skill for turning a real local Zotero collection tree into a curated li
 5. imports the item and managed PDF attachment into Zotero; and
 6. assigns a tag such as `2016-CVPR-ResNet-CCFA` or `2017-PNAS-EWC`;
 7. validates that a multi-venue manifest follows an explicit allowlist and distribution policy.
+8. rejects a paper whose stated topic cannot be supported by its title or abstract.
 
 The skill is designed for requests in Chinese or English, including requests such as “给每个 Zotero
 最底层分类添加一篇经典论文并下载 PDF” and “populate each leaf collection with a seminal CCF-A
@@ -97,6 +98,8 @@ field contract is in [references/manifest.md](references/manifest.md).
 | `ccf` | `CCFA` or blank | Optional verified CCF suffix |
 | `pdf_spec` | `arxiv:1512.03385` | Open PDF source |
 | `source_url` | `https://arxiv.org/abs/1512.03385` | Canonical paper page |
+| `topic_terms` | `semantic segmentation,segmentation` | Terms that must occur in title or abstract |
+| `topic_rationale` | `Directly studies semantic segmentation.` | Human-reviewable fit to this exact leaf |
 
 For multi-venue work, pass `--allowed-venues`, `--required-venues`, `--min-per-venue`,
 `--max-per-venue`, and/or `--max-venue-share` to `validate` and `import`. These checks prevent a
@@ -104,13 +107,19 @@ manifest from silently becoming a single-source batch. For example, a non-CVPR b
 all of `ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,
 Science Robotics,MIA` and cap any one venue at 25%.
 
+For exact leaf relevance, use `--require-topic-evidence`. It requires `topic_terms` and
+`topic_rationale` on every row, and verifies at least one listed term against the paper title or
+abstract. This prevents a generic paper from entering a domain-specific subcollection solely
+because it is from a prestigious venue.
+
 Then validate, download, inspect, and import:
 
 ```bash
 python "$CURATOR" validate --manifest work/manifest.tsv --check-targets --require-all-leaves \
   --allowed-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
   --required-venues "ICML,NeurIPS,ICLR,AAAI,ICCV,MICCAI,TPAMI,TMI,Lancet,Nature,Science,Nature Communications,Science Robotics,MIA" \
-  --min-per-venue 1 --max-venue-share 0.25
+  --min-per-venue 1 --max-venue-share 0.25 \
+  --require-topic-evidence --min-topic-term-matches 1
 
 python "$CURATOR" download \
   --manifest work/manifest.tsv \

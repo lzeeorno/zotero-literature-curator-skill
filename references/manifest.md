@@ -16,6 +16,8 @@ Required columns:
 | `short_tag` | Concise method/model or title summary used in the tag |
 | `pdf_spec` | `arxiv:<id>` or `url:<direct-open-pdf-url>` |
 | `source_url` | Canonical DOI, publisher, proceedings, or arXiv landing page |
+| `topic_terms` | Comma-separated English terms that must occur in the paper title or abstract when topic validation is enabled |
+| `topic_rationale` | Brief, reviewable explanation of why this paper belongs in this exact lowest-level collection |
 
 Optional columns:
 
