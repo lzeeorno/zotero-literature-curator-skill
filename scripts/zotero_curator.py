@@ -412,14 +412,19 @@ def validate_venue_distribution(rows: list[dict[str, str]], args: argparse.Names
 
 
 def topic_match_count(row: dict[str, str]) -> int:
-    """Count reviewed topic terms supported by the paper title or abstract."""
-    evidence = " ".join((row.get("title", ""), row.get("abstract", ""))).casefold()
+    """Count reviewed leaf-topic terms supported by the paper abstract only."""
+    evidence = row.get("abstract", "").casefold()
     terms = [term.strip().casefold() for term in row.get("topic_terms", "").split(",") if term.strip()]
     return sum(term in evidence for term in terms)
 
 
+def normalize_evidence(text: str) -> str:
+    """Normalize extracted PDF text for a whitespace-insensitive excerpt check."""
+    return " ".join(text.casefold().split())
+
+
 def validate_topic_relevance(rows: list[dict[str, str]], args: argparse.Namespace) -> None:
-    """Require explicit, text-supported evidence that each paper fits its leaf topic."""
+    """Require abstract-supported evidence that each paper is a method for its leaf topic."""
     if not getattr(args, "require_topic_evidence", False):
         return
     minimum = getattr(args, "min_topic_term_matches", 1)
@@ -430,16 +435,27 @@ def validate_topic_relevance(rows: list[dict[str, str]], args: argparse.Namespac
         line = row.get("_line", "?")
         terms = [term.strip() for term in row.get("topic_terms", "").split(",") if term.strip()]
         rationale = row.get("topic_rationale", "").strip()
+        abstract = row.get("abstract", "").strip()
+        excerpt = row.get("abstract_evidence", "").strip()
+        if not abstract:
+            errors.append(f"line {line}: abstract is required with --require-topic-evidence")
+            continue
         if not terms:
             errors.append(f"line {line}: topic_terms is required with --require-topic-evidence")
             continue
         if not rationale:
             errors.append(f"line {line}: topic_rationale is required with --require-topic-evidence")
             continue
+        if not excerpt:
+            errors.append(f"line {line}: abstract_evidence is required with --require-topic-evidence")
+            continue
+        if normalize_evidence(excerpt) not in normalize_evidence(abstract):
+            errors.append(f"line {line}: abstract_evidence must be an excerpt from abstract")
+            continue
         matches = topic_match_count(row)
         if matches < minimum:
             errors.append(
-                f"line {line}: only {matches} topic term(s) from topic_terms occur in title/abstract; "
+                f"line {line}: only {matches} topic term(s) from topic_terms occur in abstract; "
                 f"need at least {minimum} for {row.get('collection_name', row.get('collection_id', 'collection'))}"
             )
     if errors:
@@ -763,8 +779,8 @@ def parser() -> argparse.ArgumentParser:
     validate.add_argument("--min-per-venue", type=int, help="minimum rows for each required venue, or allowed venue when required is omitted")
     validate.add_argument("--max-per-venue", type=int, help="maximum rows from any one venue")
     validate.add_argument("--max-venue-share", type=float, help="maximum fraction of manifest rows from any one venue")
-    validate.add_argument("--require-topic-evidence", action="store_true", help="require text-supported topic_terms and topic_rationale for every row")
-    validate.add_argument("--min-topic-term-matches", type=int, default=1, help="minimum topic_terms that must occur in title or abstract")
+    validate.add_argument("--require-topic-evidence", action="store_true", help="require abstract-supported topic_terms, rationale, and an exact abstract evidence excerpt for every row")
+    validate.add_argument("--min-topic-term-matches", type=int, default=1, help="minimum topic_terms that must occur in the abstract")
     validate.add_argument("--check-targets", action="store_true", help="also check IDs against local Zotero")
     validate.add_argument(
         "--require-all-leaves",
@@ -784,8 +800,8 @@ def parser() -> argparse.ArgumentParser:
     importer.add_argument("--min-per-venue", type=int, help="minimum rows for each required venue, or allowed venue when required is omitted")
     importer.add_argument("--max-per-venue", type=int, help="maximum rows from any one venue")
     importer.add_argument("--max-venue-share", type=float, help="maximum fraction of manifest rows from any one venue")
-    importer.add_argument("--require-topic-evidence", action="store_true", help="require text-supported topic_terms and topic_rationale for every row")
-    importer.add_argument("--min-topic-term-matches", type=int, default=1, help="minimum topic_terms that must occur in title or abstract")
+    importer.add_argument("--require-topic-evidence", action="store_true", help="require abstract-supported topic_terms, rationale, and an exact abstract evidence excerpt for every row")
+    importer.add_argument("--min-topic-term-matches", type=int, default=1, help="minimum topic_terms that must occur in the abstract")
     importer.add_argument("--pdf-root", required=True)
     importer.add_argument("--state", help="local resumable import-state JSON path")
     importer.add_argument("--dry-run", action="store_true", help="check all local inputs without modifying Zotero")

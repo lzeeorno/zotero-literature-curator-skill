@@ -183,8 +183,9 @@ class ZoteroCuratorTests(unittest.TestCase):
         rows = [{
             "_line": "2", "collection_name": "Medical Digital Twin",
             "title": "CAP4D: Creating Animatable 4D Portrait Avatars",
-            "abstract": "", "topic_terms": "digital twin,patient simulation",
+            "abstract": "CAP4D reconstructs portrait avatars from reference images.", "topic_terms": "digital twin,patient simulation",
             "topic_rationale": "The paper must concern a medical digital twin.",
+            "abstract_evidence": "CAP4D reconstructs portrait avatars from reference images.",
         }]
         with self.assertRaises(curator.ManifestError) as error:
             curator.validate_topic_relevance(rows, args)
@@ -194,11 +195,46 @@ class ZoteroCuratorTests(unittest.TestCase):
         args = type("Args", (), {"require_topic_evidence": True, "min_topic_term_matches": 1})()
         rows = [{
             "_line": "2", "collection_name": "Medical Digital Twin",
-            "title": "Patient-specific digital twin simulation for treatment response",
-            "abstract": "", "topic_terms": "digital twin,treatment response",
+            "title": "A generic model title",
+            "abstract": "We present a patient-specific digital twin simulation for treatment response prediction.",
+            "topic_terms": "digital twin,treatment response",
             "topic_rationale": "Studies patient-specific digital-twin simulation.",
+            "abstract_evidence": "patient-specific digital twin simulation for treatment response prediction",
         }]
         curator.validate_topic_relevance(rows, args)
+
+    def test_topic_relevance_rejects_evidence_that_only_appears_in_title(self) -> None:
+        args = type("Args", (), {"require_topic_evidence": True, "min_topic_term_matches": 1})()
+        rows = [{
+            "_line": "2", "collection_name": "Medical Digital Twin",
+            "title": "Patient-specific digital twin simulation",
+            "abstract": "We reconstruct a photorealistic portrait avatar from one input image.",
+            "topic_terms": "digital twin", "topic_rationale": "The title is related.",
+            "abstract_evidence": "Patient-specific digital twin simulation",
+        }]
+        with self.assertRaises(curator.ManifestError) as error:
+            curator.validate_topic_relevance(rows, args)
+        self.assertIn("abstract_evidence", str(error.exception))
+
+    def test_topic_match_count_ignores_title_terms(self) -> None:
+        row = {
+            "title": "Patient-specific digital twin simulation",
+            "abstract": "We reconstruct a photorealistic portrait avatar from one input image.",
+            "topic_terms": "digital twin,patient simulation",
+        }
+        self.assertEqual(curator.topic_match_count(row), 0)
+
+    def test_topic_relevance_rejects_missing_abstract(self) -> None:
+        args = type("Args", (), {"require_topic_evidence": True, "min_topic_term_matches": 1})()
+        rows = [{
+            "_line": "2", "collection_name": "Semantic Segmentation",
+            "title": "A Semantic Segmentation Method", "abstract": "",
+            "topic_terms": "semantic segmentation", "topic_rationale": "Relevant method.",
+            "abstract_evidence": "semantic segmentation",
+        }]
+        with self.assertRaises(curator.ManifestError) as error:
+            curator.validate_topic_relevance(rows, args)
+        self.assertIn("abstract is required", str(error.exception))
 
     def test_download_validate_and_import_sequence(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

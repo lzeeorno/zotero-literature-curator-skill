@@ -77,10 +77,14 @@ collection_id, collection_name, title, year, venue, short_tag, ccf, pdf_spec, so
 `url:<direct-open-pdf-url>`. A legacy `search:<title>` value is accepted only when the reviewed
 `source_url` is an arXiv landing page, from which the exact PDF can be derived.
 
-For every new row, also fill `topic_terms` with the English concepts expected for that exact leaf,
-and `topic_rationale` with a concise explanation of the fit. The terms must be found in the
-paper's title or abstract. Do not use the parent category alone as evidence: a general 4D-avatar
-paper does not belong under a medical digital-twin leaf merely because both discuss 3D/4D models.
+For every new row, read the paper abstract and fill `topic_terms` with the English method/task
+concepts expected for that exact leaf, `topic_rationale` with the concise comparison-method
+judgement, and `abstract_evidence` with a short verbatim abstract excerpt that proves the
+classification. The terms and excerpt must be found in the abstract itself; a title is never
+sufficient evidence. A general method is admissible only when its abstract establishes that it is
+a usable comparison method for the leaf task; a merely adjacent application is not. Do not use the
+parent category alone as evidence: a general 4D-avatar paper does not belong under a medical
+digital-twin leaf merely because both discuss 3D/4D models.
 
 ### 3. Validate And Download Local PDFs
 
